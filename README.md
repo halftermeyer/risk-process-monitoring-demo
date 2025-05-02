@@ -56,8 +56,7 @@ OPTIONAL MATCH path = (j)(()-[:DEPENDS_ON|WAITS]->(jobs))*(x WHERE x.status <> "
 // the *duration* property in this context means *expected_duration* because tasks are not completed yet
 WITH n, i, path, apoc.coll.sum([job IN [j]+jobs | job.duration * (1.0-job.completion_progress)]) AS total_duration
 ORDER BY total_duration DESC LIMIT 1
-WITH n, i, path, apoc.create.vNode(["REPORT"], {critical_duration: total_duration}) AS info
-RETURN n, i, path, info, apoc.create.vRelationship(n, "INFO", {}, info)
+RETURN n, i, path, total_duration
 ```
 CPA at scale can be done with GDS longest path as described [**here**](https://medium.com/me/stats/post/792cc8a04ff1).
 
