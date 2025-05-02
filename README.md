@@ -8,6 +8,8 @@ In banking, risk computation processes involve complex workflows with interdepen
 
 ### Key Features
 - **Graph Visualization**: Visualize job dependencies (`DEPENDS_ON`), queue states (`WAITS`), and processor workloads.
+![model](https://github.com/user-attachments/assets/bf909950-12f4-4907-89ae-3dbcbce7093e)
+
 - **Critical Path Analysis (CPA)**: Compute the critical path and ETA for processes to identify bottlenecks.
 
 ## Prerequisites
