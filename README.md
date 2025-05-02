@@ -15,8 +15,6 @@ In banking, risk computation processes involve complex workflows with interdepen
 ## Prerequisites
 
 - **Neo4j Server** or **Neo4j Aura** (version 5.10 or later).
-- Neo4j Graph Data Science (GDS) library installed.
-- APOC library installed.
 
 ## Setup
 
