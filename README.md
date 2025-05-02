@@ -59,6 +59,7 @@ ORDER BY total_duration DESC LIMIT 1
 WITH n, i, path, apoc.create.vNode(["REPORT"], {critical_duration: total_duration}) AS info
 RETURN n, i, path, info, apoc.create.vRelationship(n, "INFO", {}, info)
 ```
+CPA at scales can be done with GDS longest path as described [**here**](https://medium.com/me/stats/post/792cc8a04ff1).
 
 ## Explore
 
