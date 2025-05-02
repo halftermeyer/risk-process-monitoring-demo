@@ -53,7 +53,7 @@ RETURN path, n, i
 ```cypher
 MATCH (n:Process {process_id:"Proc3"})<-[i:IS_INSTANCE_OF]-(j:Job WHERE j.status <> "Completed")
 OPTIONAL MATCH path = (j)(()-[:DEPENDS_ON|WAITS]->(jobs))*(x WHERE x.status <> "Completed")
-// duration means expected_duration until completed
+// the *duration* property in this context means *expected_duration* because tasks are not completed yet
 WITH n, i, path, apoc.coll.sum([job IN [j]+jobs | job.duration * (1.0-job.completion_progress)]) AS total_duration
 ORDER BY total_duration DESC LIMIT 1
 WITH n, i, path, apoc.create.vNode(["REPORT"], {critical_duration: total_duration}) AS info
