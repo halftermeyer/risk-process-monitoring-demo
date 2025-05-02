@@ -20,3 +20,57 @@ In banking, risk computation processes involve complex workflows with interdepen
 
 Ingest graph from [**script**](./ingest.cypher)
 
+To show the graph model :
+```cypher
+CALL db.schema.visualization()
+```
+
+## Query
+
+- Show a cuputing process
+```cypher
+MATCH (n:Process {process_id:"Proc1"})<-[i:IS_INSTANCE_OF]-(j:Job)
+OPTIONAL MATCH path = (j)-[:DEPENDS_ON]->*()
+RETURN path, n, i
+```
+
+- Show a processor queue
+```cypher
+MATCH path = (n:Processor {processor_id: "P3"} )-[:QUEUE_HEAD]->()
+(()<-[:WAITS]-())*
+()<-[:QUEUE_TAIL]-(n)
+RETURN path
+```
+
+- Show work still to do to complete a process
+```cypher
+MATCH (n:Process {process_id:"Proc3"})<-[i:IS_INSTANCE_OF]-(j:Job)
+OPTIONAL MATCH path = (j)-[:DEPENDS_ON|WAITS]->*(x WHERE x.status <> "Completed")
+RETURN path, n, i
+```
+
+- Critical path analysis of a process
+```cypher
+MATCH (n:Process {process_id:"Proc3"})<-[i:IS_INSTANCE_OF]-(j:Job WHERE j.status <> "Completed")
+OPTIONAL MATCH path = (j)(()-[:DEPENDS_ON|WAITS]->(jobs))*(x WHERE x.status <> "Completed")
+// duration means expected_duration until completed
+WITH n, i, path, apoc.coll.sum([job IN [j]+jobs | job.duration * (1.0-job.completion_progress)]) AS total_duration
+ORDER BY total_duration DESC LIMIT 1
+WITH n, i, path, apoc.create.vNode(["REPORT"], {critical_duration: total_duration}) AS info
+RETURN n, i, path, info, apoc.create.vRelationship(n, "INFO", {}, info)
+```
+
+## Explore
+
+### Run search phrases
+
+- Show me a graph
+- Show process $procid
+- Show process dependency for $procid
+- Show queue for processor $processor_id
+- Show not completed work for $procid
+
+### Run scene action
+
+Select one or several **Process** nodes and right-click run scene action / CPA
+
