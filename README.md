@@ -75,6 +75,8 @@ CPA at scale can be done with GDS longest path as described [**here**](https://m
 
 Select one or several **Process** nodes and right-click run scene action / CPA
 
-https://github.com/user-attachments/assets/d4e1c0a1-be95-4ee4-a1af-b1b7d3454c14
+https://github.com/user-attachments/assets/a1f02750-7ae5-45aa-8ffb-7aaf2ac69d41
+
+
 
 
