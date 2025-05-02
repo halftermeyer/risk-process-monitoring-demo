@@ -1,0 +1,84 @@
+name,description,query,id,parentId,isFolder
+building the graph,,,0,1,true
+ingest data,,"// Processors
+CREATE (p1:Processor {processor_id: 'P1', name: 'RiskProc1', load: 3})
+CREATE (p2:Processor {processor_id: 'P2', name: 'RiskProc2', load: 2})
+CREATE (p3:Processor {processor_id: 'P3', name: 'RiskProc3', load: 1})
+
+// Processes
+CREATE (proc1:Process {process_id: 'Proc1', name: 'CreditRisk_Q1'})
+CREATE (proc2:Process {process_id: 'Proc2', name: 'MarketRisk_Q1'})
+CREATE (proc3:Process {process_id: 'Proc3', name: 'OpRisk_Q1'})
+
+// Shared Job (part of CreditRisk_Q1 and MarketRisk_Q1)
+CREATE (j0:Job {job_id: 'J0', name: 'Shared_DataPrep', status: 'Completed', duration: 5, risk_score: 0.2, completion_progress: 1.0})
+CREATE (j0)-[:RUNS_ON]->(p1)
+
+// Jobs for CreditRisk_Q1 (Diamond-shaped DAG)
+CREATE (j1:Job {job_id: 'J1', name: 'Credit_ModelRun1', status: 'Completed', duration: 15, risk_score: 0.7, completion_progress: 1.0})
+CREATE (j2:Job {job_id: 'J2', name: 'Credit_ModelRun2', status: 'Completed', duration: 12, risk_score: 0.6, completion_progress: 1.0})
+CREATE (j3:Job {job_id: 'J3', name: 'Credit_Validate', status: 'Completed', duration: 6, risk_score: 0.4, completion_progress: 1.0})
+CREATE (j4:Job {job_id: 'J4', name: 'Credit_Report', status: 'Running', duration: 3, risk_score: 0.2, completion_progress: 0.5})
+CREATE (j1)-[:RUNS_ON]->(p1), (j2)-[:RUNS_ON]->(p1), (j3)-[:RUNS_ON]->(p2), (j4)-[:RUNS_ON]->(p3)
+CREATE (j1)-[:DEPENDS_ON]->(j0), (j2)-[:DEPENDS_ON]->(j0), (j3)-[:DEPENDS_ON]->(j1), (j3)-[:DEPENDS_ON]->(j2), (j4)-[:DEPENDS_ON]->(j3)
+CREATE (j4)-[:IS_INSTANCE_OF]->(proc1)
+
+// Jobs for MarketRisk_Q1 (Parallel Paths DAG)
+CREATE (j5:Job {job_id: 'J5', name: 'Market_ModelRun1', status: 'Completed', duration: 14, risk_score: 0.6, completion_progress: 1.0})
+CREATE (j6:Job {job_id: 'J6', name: 'Market_ModelRun2', status: 'Completed', duration: 11, risk_score: 0.5, completion_progress: 1.0})
+CREATE (j7:Job {job_id: 'J7', name: 'Market_Validate1', status: 'Completed', duration: 5, risk_score: 0.3, completion_progress: 1.0})
+CREATE (j8:Job {job_id: 'J8', name: 'Market_Validate2', status: 'Completed', duration: 4, risk_score: 0.2, completion_progress: 1.0})
+CREATE (j9:Job {job_id: 'J9', name: 'Market_Report', status: 'Pending', duration: 2, risk_score: 0.1, completion_progress: 0.0})
+CREATE (j5)-[:RUNS_ON]->(p1), (j6)-[:RUNS_ON]->(p1), (j7)-[:RUNS_ON]->(p2), (j8)-[:RUNS_ON]->(p2), (j9)-[:RUNS_ON]->(p3)
+CREATE (j5)-[:DEPENDS_ON]->(j0), (j6)-[:DEPENDS_ON]->(j0), (j7)-[:DEPENDS_ON]->(j5), (j8)-[:DEPENDS_ON]->(j6), (j9)-[:DEPENDS_ON]->(j7), (j9)-[:DEPENDS_ON]->(j8)
+CREATE (j9)-[:IS_INSTANCE_OF]->(proc2)
+
+// Shared Job (part of MarketRisk_Q1 and OpRisk_Q1)
+CREATE (j10:Job {job_id: 'J10', name: 'Shared_ModelRun', status: 'Running', duration: 10, risk_score: 0.5, completion_progress: 0.5})
+CREATE (j10)-[:RUNS_ON]->(p2)
+
+// Jobs for OpRisk_Q1 (Single Chain DAG)
+CREATE (j11:Job {job_id: 'J11', name: 'Op_DataPrep', status: 'Completed', duration: 12, risk_score: 0.5, completion_progress: 1.0})
+CREATE (j12:Job {job_id: 'J12', name: 'Op_Validate', status: 'Pending', duration: 5, risk_score: 0.3, completion_progress: 0.0})
+CREATE (j13:Job {job_id: 'J13', name: 'Op_Audit', status: 'Pending', duration: 6, risk_score: 0.4, completion_progress: 0.0})
+CREATE (j14:Job {job_id: 'J14', name: 'Op_Report', status: 'Pending', duration: 4, risk_score: 0.2, completion_progress: 0.0})
+CREATE (j11)-[:RUNS_ON]->(p1), (j12)-[:RUNS_ON]->(p2), (j13)-[:RUNS_ON]->(p3), (j14)-[:RUNS_ON]->(p3)
+CREATE (j12)-[:DEPENDS_ON]->(j10), (j10)-[:DEPENDS_ON]->(j11), (j13)-[:DEPENDS_ON]->(j12), (j14)-[:DEPENDS_ON]->(j13)
+CREATE (j14)-[:IS_INSTANCE_OF]->(proc3)
+
+// Queue for RiskProc1 (j0 -> j1 -> j5 -> j2 -> j6 -> j11)
+CREATE (p1)-[:QUEUE_HEAD]->(j0)
+CREATE (p1)-[:QUEUE_TAIL]->(j11)
+CREATE (j1)-[:WAITS]->(j0), (j5)-[:WAITS]->(j1), (j2)-[:WAITS]->(j5), (j6)-[:WAITS]->(j2), (j11)-[:WAITS]->(j6)
+
+// Queue for RiskProc2 (j3 -> j7 -> j8 -> j10 -> j12)
+CREATE (p2)-[:QUEUE_HEAD]->(j3)
+CREATE (p2)-[:QUEUE_TAIL]->(j12)
+CREATE (j7)-[:WAITS]->(j3), (j8)-[:WAITS]->(j7), (j10)-[:WAITS]->(j8), (j12)-[:WAITS]->(j10)
+
+// Queue for RiskProc3 (j4 -> j9 -> j13 -> j14)
+CREATE (p3)-[:QUEUE_HEAD]->(j4)
+CREATE (p3)-[:QUEUE_TAIL]->(j14)
+CREATE (j9)-[:WAITS]->(j4), (j13)-[:WAITS]->(j9), (j14)-[:WAITS]->(j13);",2,0,false
+show model,,CALL db.schema.visualization(),3,0,false
+schema for Bloom,,"CREATE INDEX report_thing IF NOT EXISTS
+FOR (r:Report) ON (r.thing);
+CREATE INDEX info_thing IF NOT EXISTS
+FOR ()-[i:INFO]-() ON (i.thing);",4,0,false
+Queries,,,5,1,true
+show a computing process,,"MATCH (n:Process {process_id:""Proc1""})<-[i:IS_INSTANCE_OF]-(j:Job)
+OPTIONAL MATCH path = (j)-[:DEPENDS_ON]->*()
+RETURN path, n, i",6,5,false
+Show processor's queue,,"MATCH path = (n:Processor {processor_id: ""P3""} )-[:QUEUE_HEAD]->()
+(()<-[:WAITS]-())*
+()<-[:QUEUE_TAIL]-(n)
+RETURN path",7,5,false
+Work still to complete,,"MATCH (n:Process {process_id:""Proc3""})<-[i:IS_INSTANCE_OF]-(j:Job)
+OPTIONAL MATCH path = (j)-[:DEPENDS_ON|WAITS]->*(x WHERE x.status <> ""Completed"")
+RETURN path, n, i",8,5,false
+CPA,,"MATCH (n:Process {process_id:""Proc3""})<-[i:IS_INSTANCE_OF]-(j:Job WHERE j.status <> ""Completed"")
+OPTIONAL MATCH path = (j)(()-[:DEPENDS_ON|WAITS]->(jobs))*(x WHERE x.status <> ""Completed"")
+WITH n, i, path, apoc.coll.sum([job IN [j]+jobs | job.duration * (1.0-job.completion_progress)]) AS total_duration
+ORDER BY total_duration DESC LIMIT 1
+WITH n, i, path, apoc.create.vNode([""REPORT""], {critical_duration: total_duration}) AS info
+RETURN n, i, path, info, apoc.create.vRelationship(n, ""INFO"", {}, info)",9,5,false
