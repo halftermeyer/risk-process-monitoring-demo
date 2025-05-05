@@ -28,7 +28,7 @@ CALL db.schema.visualization()
 
 ## Query
 
-- Show a cuputing process
+- Show a computing process
 ```cypher
 MATCH (n:Process {process_id:"Proc1"})<-[i:IS_INSTANCE_OF]-(j:Job)
 OPTIONAL MATCH path = (j)-[:DEPENDS_ON]->*()
